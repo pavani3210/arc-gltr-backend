@@ -45,6 +45,7 @@ class LM(AbstractLanguageChecker):
     def check_probabilities(self, in_text, topk=40):
         # Process input
         l=[0,0,0,0]
+        l1=['Top10','Top100','Top1000','Above1000']
         token_ids = self.enc(in_text, return_tensors='pt').data['input_ids'][0]
         token_ids = torch.concat([self.start_token, token_ids])
         # Forward through the model
@@ -83,6 +84,8 @@ class LM(AbstractLanguageChecker):
         for i in range(len(l)):
             wk.write(1,i,l[i])
         result.save('C:/Users/Pavani Rangineni/Desktop/result.xls')
+
+        result1 = [list(zip(l,l1))]
         
         bpe_strings = self.enc.convert_ids_to_tokens(token_ids[:])
 
@@ -100,7 +103,7 @@ class LM(AbstractLanguageChecker):
         #            'real_topk': real_topk,
         #            'pred_topk': pred_topk}
 
-        payload ={'result':l}
+        payload ={'result': result1}
         
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
