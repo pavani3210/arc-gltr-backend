@@ -8,3 +8,5 @@ PyYaml
 flask_cors
 docx2txt
 xlsxwriter
+xlwt
+pathlib
