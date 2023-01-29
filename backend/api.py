@@ -1,8 +1,12 @@
+import csv
+from io import StringIO
+import zipfile
+from flask import make_response
 import numpy as np
 import torch
-import time
-from xlwt import Workbook
-import pathlib
+import PyPDF2
+import docx2txt
+import os
 
 from transformers import (GPT2LMHeadModel, GPT2Tokenizer,
                           BertTokenizer, BertForMaskedLM)
@@ -36,15 +40,17 @@ class AbstractLanguageChecker:
 class LM(AbstractLanguageChecker):
     def __init__(self, model_name_or_path="gpt2"):
         super(LM, self).__init__()
-        self.enc = GPT2Tokenizer.from_pretrained(model_name_or_path)
-        self.model = GPT2LMHeadModel.from_pretrained(model_name_or_path)
+        self.enc = GPT2Tokenizer.from_pretrained('gpt2')
+        self.model = GPT2LMHeadModel.from_pretrained('gpt2')
         self.model.to(self.device)
         self.model.eval()
         self.start_token = self.enc(self.enc.bos_token, return_tensors='pt').data['input_ids'][0]
         print("Loaded GPT-2 model!")
+    
     def check_probabilities(self, in_text, topk=40):
         # Process input
         l=[0,0,0,0]
+        # create in-text to change pdf or docx to test
         l1=['Top10','Top100','Top1000','Above1000']
         token_ids = self.enc(in_text, return_tensors='pt').data['input_ids'][0]
         token_ids = torch.concat([self.start_token, token_ids])
@@ -61,9 +67,7 @@ class LM(AbstractLanguageChecker):
         real_topk_pos = list(
             [int(np.where(sorted_preds[i] == y[i].item())[0][0])
              for i in range(y.shape[0])])
-        # real_topk_probs = all_probs[np.arange(
-        #     0, y.shape[0], 1), y].data.cpu().numpy().tolist()
-        # real_topk_probs = list(map(lambda x: round(x, 5), real_topk_probs))
+        
         for i in real_topk_pos:
             if i>=1000:
                 l[3]+=1
@@ -73,45 +77,65 @@ class LM(AbstractLanguageChecker):
                 l[1]+=1
             elif i<10:
                 l[0]+=1
-        
-        result = Workbook()
-        wk = result.add_sheet('sheet1')
-        wk.write(0,0,'Top10')
-        wk.write(0,1,'Top100')
-        wk.write(0,2,'Top1000')
-        wk.write(0,3,'Above1000')
-
-        for i in range(len(l)):
-            wk.write(1,i,l[i])
-        result.save('C:/Users/Pavani Rangineni/Desktop/result.xls')
-
-        result1 = [list(zip(l,l1))]
-        
-        bpe_strings = self.enc.convert_ids_to_tokens(token_ids[:])
-
-        bpe_strings = [self.postprocess(s) for s in bpe_strings]
-
-        topk_prob_values, topk_prob_inds = torch.topk(all_probs, k=topk, dim=1)
-
-        pred_topk = [list(zip(self.enc.convert_ids_to_tokens(topk_prob_inds[i]),
-                              topk_prob_values[i].data.cpu().numpy().tolist()
-                              )) for i in range(y.shape[0])]
-        pred_topk = [[(self.postprocess(t[0]), t[1]) for t in pred] for pred in pred_topk]
-
-
-        # payload = {'bpe_strings': bpe_strings,
-        #            'real_topk': real_topk,
-        #            'pred_topk': pred_topk}
-
-        payload ={'result': result1}
-        
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-        
-        print(l)
-
-        return payload
     
+        return l
+
+    def gettext(self, file):
+        if file.endswith('.docx'):
+            text = docx2txt.process(file)
+        elif file.endswith('.txt'):
+            new_file = open(file)
+            text = new_file.read()
+        elif file.endswith('.pdf'):
+            pobj = open(file, 'rb')
+            reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in range(len(reader.pages)):
+                page_text = reader.pages[page]
+                text+= page_text.extract_text()
+        return text
+
+    def split_text(self, project, text):
+        l=[0,0,0,0]
+        max = len(text)
+        i = 0
+        while i < max:
+            if i+2500 < max:
+                l1 = project.lm.check_probabilities(text[i:i+2500],topk = 40)
+                i+=2500
+            else:
+                l1 = project.lm.check_probabilities(text[i:],topk = 40)
+                i = max
+            for j in range(len(l1)):
+                l[j] += l1[j]
+        return l
+
+    def extract_files(self, project, file, topk=40):
+        row=[['FileName','Top10','Top100','Top1000','Above1000']]
+        
+        if zipfile.is_zipfile(file):
+            zip1 = zipfile.ZipFile(file)
+            with zipfile.ZipFile(file,'r') as zip:
+                zip.extractall()
+            for i in zip.infolist():
+                text = project.lm.gettext(i.filename)
+                l1 = [i.filename]
+                if len(text)>2500:
+                    l = project.lm.split_text(project, text)
+                else:
+                    l = project.lm.check_probabilities(text,topk = 40)
+                for j in range(len(l)):
+                    l1.append(l[j])
+                row.append(l1)
+
+        si = StringIO()
+        cw = csv.writer(si)
+        cw.writerows(row)
+        output = make_response(si.getvalue())
+        output.headers["Content-Disposition"] = "attachment; filename=result.csv"
+        output.headers["Content-type"] = "text/csv"
+        return output
+   
     def postprocess(self, token):
         with_space = False
         with_break = False
