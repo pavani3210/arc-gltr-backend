@@ -82,12 +82,12 @@ class LM(AbstractLanguageChecker):
 
     def gettext(self, file, fileName):
         text = ""
-        if file.endswith('.docx'):
+        if fileName.endswith('.docx'):
             text = docx2txt.process(file)
-        elif file.endswith('.txt'):
-            new_file = open(file)
+        elif fileName.endswith('.txt'):
+            new_file = open(fileName)
             text = new_file.read()
-        elif file.endswith('.pdf'):
+        elif fileName.endswith('.pdf'):
             # pobj = open(file, 'rb')
             reader = PyPDF2.PdfReader(file)
             text = ""
@@ -101,9 +101,9 @@ class LM(AbstractLanguageChecker):
         max = len(text)
         i = 0
         while i < max:
-            if i+2500 < max:
-                l1 = project.lm.check_probabilities(text[i:i+2500],topk = 40)
-                i+=2500
+            if i+1500 < max:
+                l1 = project.lm.check_probabilities(text[i:i+1500],topk = 40)
+                i+=1500
             else:
                 l1 = project.lm.check_probabilities(text[i:],topk = 40)
                 i = max
@@ -118,7 +118,7 @@ class LM(AbstractLanguageChecker):
             l = project.lm.split_text(project, text)
         else:
             l = project.lm.check_probabilities(text,topk)
-            for j in range(len(l)):
+        for j in range(len(l)):
                 l1.append(l[j])
         return l1        
 
