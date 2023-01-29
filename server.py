@@ -41,7 +41,9 @@ def fileUpload():
     if project in projects:
         p = projects[project] # type: Project
         res = p.lm.extract_files(p, file, topk=20)
-
+    res.headers.add("Access-Control-Allow-Origin", "*")
+    res.headers.add("Access-Control-Allow-Headers", "*")
+    res.headers.add("Access-Control-Allow-Methods", "*")
     return res
 
 parser = argparse.ArgumentParser()

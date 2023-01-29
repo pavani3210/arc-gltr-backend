@@ -82,12 +82,12 @@ class LM(AbstractLanguageChecker):
 
     def gettext(self, file, fileName):
         text = ""
-        if file.endswith('.docx'):
+        if fileName.endswith('.docx'):
             text = docx2txt.process(file)
-        elif file.endswith('.txt'):
+        elif fileName.endswith('.txt'):
             new_file = open(file)
             text = new_file.read()
-        elif file.endswith('.pdf'):
+        elif fileName.endswith('.pdf'):
             # pobj = open(file, 'rb')
             reader = PyPDF2.PdfReader(file)
             text = ""
