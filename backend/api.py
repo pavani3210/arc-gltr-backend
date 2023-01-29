@@ -81,6 +81,7 @@ class LM(AbstractLanguageChecker):
         return l
 
     def gettext(self, file):
+        text = ""
         if file.endswith('.docx'):
             text = docx2txt.process(file)
         elif file.endswith('.txt'):
@@ -110,23 +111,32 @@ class LM(AbstractLanguageChecker):
                 l[j] += l1[j]
         return l
 
+    def get_values(self, project, filename, topk =40):
+        text = project.lm.gettext(filename)
+        l1 = [filename]
+        if len(text)>2500:
+            l = project.lm.split_text(project, text)
+        else:
+            l = project.lm.check_probabilities(text,topk)
+            for j in range(len(l)):
+                l1.append(l[j])
+        return l1        
+
     def extract_files(self, project, file, topk=40):
         row=[['FileName','Top10','Top100','Top1000','Above1000']]
-        
-        if zipfile.is_zipfile(file):
+
+        if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
+            l1 = project.lm.get_values(project, file.filename, topk)
+            row.append(l1)
+        elif zipfile.is_zipfile(file):
             zip1 = zipfile.ZipFile(file)
             with zipfile.ZipFile(file,'r') as zip:
                 zip.extractall()
             for i in zip.infolist():
-                text = project.lm.gettext(i.filename)
-                l1 = [i.filename]
-                if len(text)>2500:
-                    l = project.lm.split_text(project, text)
-                else:
-                    l = project.lm.check_probabilities(text,topk = 40)
-                for j in range(len(l)):
-                    l1.append(l[j])
+                l1 = project.lm.get_values(project, i.filename, topk)
                 row.append(l1)
+        else:
+            print("Its not zip or pdf or docx or text file")
 
         si = StringIO()
         cw = csv.writer(si)
