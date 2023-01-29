@@ -80,7 +80,7 @@ class LM(AbstractLanguageChecker):
     
         return l
 
-    def gettext(self, file):
+    def gettext(self, file, fileName):
         text = ""
         if file.endswith('.docx'):
             text = docx2txt.process(file)
@@ -88,7 +88,7 @@ class LM(AbstractLanguageChecker):
             new_file = open(file)
             text = new_file.read()
         elif file.endswith('.pdf'):
-            pobj = open(file, 'rb')
+            # pobj = open(file, 'rb')
             reader = PyPDF2.PdfReader(file)
             text = ""
             for page in range(len(reader.pages)):
@@ -111,8 +111,8 @@ class LM(AbstractLanguageChecker):
                 l[j] += l1[j]
         return l
 
-    def get_values(self, project, filename, topk =40):
-        text = project.lm.gettext(filename)
+    def get_values(self, project, file, filename, topk =40):
+        text = project.lm.gettext(file, filename)
         l1 = [filename]
         if len(text)>2500:
             l = project.lm.split_text(project, text)
@@ -126,14 +126,14 @@ class LM(AbstractLanguageChecker):
         row=[['FileName','Top10','Top100','Top1000','Above1000']]
 
         if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
-            l1 = project.lm.get_values(project, file.filename, topk)
+            l1 = project.lm.get_values(project, file, file.filename, topk)
             row.append(l1)
         elif zipfile.is_zipfile(file):
             zip1 = zipfile.ZipFile(file)
             with zipfile.ZipFile(file,'r') as zip:
                 zip.extractall()
             for i in zip.infolist():
-                l1 = project.lm.get_values(project, i.filename, topk)
+                l1 = project.lm.get_values(project, i, i.filename, topk)
                 row.append(l1)
         else:
             print("Its not zip or pdf or docx or text file")
