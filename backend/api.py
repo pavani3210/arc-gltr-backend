@@ -129,12 +129,14 @@ class LM(AbstractLanguageChecker):
             l1 = project.lm.get_values(project, file, file.filename, topk)
             row.append(l1)
         elif zipfile.is_zipfile(file):
-            zip1 = zipfile.ZipFile(file)
             with zipfile.ZipFile(file,'r') as zip:
                 zip.extractall()
             for i in zip.infolist():
-                l1 = project.lm.get_values(project, i, i.filename, topk)
-                row.append(l1)
+                if i.filename.endswith(".pdf") or i.filename.endswith(".docx") or i.filename.endswith(".txt") and 'MACOSX' not in i.filename:
+                    l1 = project.lm.get_values(project, i.filename, i.filename, topk)
+                    row.append(l1)
+                else:
+                    print("No valid files in zip")
         else:
             print("Its not zip or pdf or docx or text file")
 
