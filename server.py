@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('HELLO WORLD')
 
 UPLOAD_FOLDER = '/'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+ALLOWED_EXTENSIONS = set(['txt', 'docx', 'pdf', 'doc'])
 CONFIG_FILE_NAME = 'lmf.yml'
 
 app = Flask(__name__)
@@ -28,6 +28,11 @@ def get_all_projects():
     for k in projects.keys():
         res[k] = projects[k].configs
     return res
+
+@app.route('/hello', methods=['GET'])
+def test():
+    return "hello world"
+
 
 @app.route('/upload', methods=['POST'])
 def fileUpload():
@@ -50,7 +55,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", default='gpt-2-small')
 parser.add_argument("--nodebug", default=True)
 parser.add_argument("--address",
-                    default="127.0.0.1")  # 0.0.0.0 for nonlocal use
+                    default="0.0.0.0")  # 0.0.0.0 for nonlocal use
 parser.add_argument("--port", default="5001")
 parser.add_argument("--nocache", default=False)
 parser.add_argument("--dir", type=str, default=os.path.abspath('data'))
@@ -71,4 +76,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     app.run(port=int(args.port), debug=not args.nodebug, host=args.address)
     
-flask_cors.CORS(app, expose_headers='Authorization')
+CORS(app, expose_headers='Authorization')

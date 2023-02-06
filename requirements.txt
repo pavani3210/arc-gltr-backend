@@ -9,3 +9,4 @@ PyYaml
 flask_cors
 docx2txt
 PyPDF2
+gunicorn
