@@ -8,8 +8,6 @@ from backend import AVAILABLE_MODELS
 
 logging.basicConfig(level=logging.INFO)
 
-logger = logging.getLogger('HELLO WORLD')
-
 UPLOAD_FOLDER = '/'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 CONFIG_FILE_NAME = 'lmf.yml'
