@@ -51,7 +51,6 @@ class LM(AbstractLanguageChecker):
         # Process input
         l=[0,0,0,0]
         # create in-text to change pdf or docx to test
-        l1=['Top10','Top100','Top1000','Above1000']
         token_ids = self.enc(in_text, return_tensors='pt').data['input_ids'][0]
         token_ids = torch.concat([self.start_token, token_ids])
         # Forward through the model
@@ -98,6 +97,7 @@ class LM(AbstractLanguageChecker):
 
     def split_text(self, project, text):
         l=[0,0,0,0]
+        l1=[0,0,0,0,0,0,0,0]
         max = len(text)
         i = 0
         while i < max:
@@ -109,21 +109,31 @@ class LM(AbstractLanguageChecker):
                 i = max
             for j in range(len(l1)):
                 l[j] += l1[j]
-        return l
+        
+
+    def check_percentage(self,project,l):
+        l1=['0','0','0','0','0','0','0','0']
+        for i in range(0,8,2):
+            print(i)
+            l1[i]=str(l[int(i/2)])
+            l1[i+1] = str((l[int(i/2)]/sum(l))*100)+'%'
+        return l1
 
     def get_values(self, project, file, filename, topk =40):
         text = project.lm.gettext(file, filename)
         l1 = [filename]
         if len(text)>2500:
             l = project.lm.split_text(project, text)
+            l2 = project.lm.check_percentage(project,l)
         else:
             l = project.lm.check_probabilities(text,topk)
-        for j in range(len(l)):
-                l1.append(l[j])
+            l2 = project.lm.check_percentage(project,l)
+        for j in range(len(l2)):
+                l1.append(l2[j])
         return l1        
 
     def extract_files(self, project, file, topk=40):
-        row=[['FileName','Top10','Top100','Top1000','Above1000']]
+        row=[['FileName','Top10','% Top10','Top100','% Top100','Top1000','% Top1000','Above1000','% Above1000']]
 
         if file.filename.endswith('.docx') or file.filename.endswith('.pdf') or file.filename.endswith('.txt'):
             l1 = project.lm.get_values(project, file, file.filename, topk)
