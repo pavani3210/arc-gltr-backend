@@ -9,6 +9,7 @@ from backend import AVAILABLE_MODELS
 logging.basicConfig(level=logging.INFO)
 
 UPLOAD_FOLDER = '/'
+logger = logging.getLogger('')
 ALLOWED_EXTENSIONS = set(['txt', 'docx', 'pdf', 'doc'])
 CONFIG_FILE_NAME = 'lmf.yml'
 
